@@ -87,6 +87,16 @@ func NewNamingClient(nc nacos_client.INacosClient) (NamingClient, error) {
 	return naming, nil
 }
 
+func (sc *NamingClient) UpdateServer(serverList []constant.ServerConfig) bool {
+	if sc == nil {
+		return false
+	}
+	if sc.serviceProxy.nacosServer == nil {
+		return false
+	}
+	return sc.serviceProxy.nacosServer.UpdateServerConfig(serverList)
+}
+
 // 注册服务实例
 func (sc *NamingClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
 	if len(param.GroupName) == 0 {

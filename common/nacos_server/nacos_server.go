@@ -79,6 +79,18 @@ func NewNacosServer(serverList []constant.ServerConfig, clientCfg constant.Clien
 	return &ns, nil
 }
 
+func (server *NacosServer) UpdateServerConfig(serverList []constant.ServerConfig) bool {
+	if serverList == nil || len(serverList) == 0 {
+		return false
+	}
+	server.RWMutex.Lock()
+	defer func() {
+		server.RWMutex.Unlock()
+	}()
+	server.serverList = serverList
+	return true
+}
+
 func (server *NacosServer) callConfigServer(api string, params map[string]string, newHeaders map[string]string,
 	method string, curServer string, contextPath string, timeoutMS uint64) (result string, err error) {
 	if contextPath == "" {
