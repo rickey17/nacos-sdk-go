@@ -75,6 +75,7 @@ func NewNamingClient(nc nacos_client.INacosClient) (NamingClient, error) {
 		return naming, err
 	}
 	naming.subCallback = NewSubscribeCallback()
+	naming.subCallback.ClientName = clientConfig.ClientName
 	naming.serviceProxy, err = NewNamingProxy(clientConfig, serverConfig, httpAgent)
 	if err != nil {
 		return naming, err

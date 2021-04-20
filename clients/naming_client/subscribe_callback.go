@@ -26,6 +26,7 @@ import (
 )
 
 type SubscribeCallback struct {
+	ClientName       string
 	callbackFuncsMap cache.ConcurrentMap
 }
 
@@ -73,7 +74,9 @@ func (ed *SubscribeCallback) ServiceChanged(service *model.Service) {
 		for _, funcItem := range funcs.([]*func(params map[string]interface{}, services []model.SubscribeService, err error)) {
 			var subscribeServices []model.SubscribeService
 			if len(service.Hosts) == 0 {
-				(*funcItem)(nil, subscribeServices, errors.New("[client.Subscribe] subscribe failed,hosts is empty"))
+				params := make(map[string]interface{})
+				params["name"] = ed.ClientName
+				(*funcItem)(params, subscribeServices, errors.New("[client.Subscribe] subscribe failed,hosts is empty"))
 				return
 			}
 			for _, host := range service.Hosts {
@@ -89,7 +92,9 @@ func (ed *SubscribeCallback) ServiceChanged(service *model.Service) {
 				subscribeService.Enable = host.Enable
 				subscribeServices = append(subscribeServices, subscribeService)
 			}
-			(*funcItem)(nil, subscribeServices, nil)
+			params := make(map[string]interface{})
+			params["name"] = ed.ClientName
+			(*funcItem)(params, subscribeServices, nil)
 		}
 	}
 }
