@@ -265,7 +265,7 @@ err := namingClient.Subscribe(vo.SubscribeParam{
     ServiceName: "demo.go",
     GroupName:   "group-a",             // default value is DEFAULT_GROUP
     Clusters:    []string{"cluster-a"}, // default value is DEFAULT
-    SubscribeCallback: func(services []model.SubscribeService, err error) {
+    SubscribeCallback: func(params map[string]interface{}, services []model.SubscribeService, err error) {
         log.Printf("\n\n callback return services:%s \n\n", utils.ToJsonString(services))
     },
 })
@@ -280,7 +280,7 @@ err := namingClient.Unsubscribe(vo.SubscribeParam{
     ServiceName: "demo.go",
     GroupName:   "group-a",             // default value is DEFAULT_GROUP
     Clusters:    []string{"cluster-a"}, // default value is DEFAULT
-    SubscribeCallback: func(services []model.SubscribeService, err error) {
+    SubscribeCallback: func(params map[string]interface{}, services []model.SubscribeService, err error) {
         log.Printf("\n\n callback return services:%s \n\n", utils.ToJsonString(services))
     },
 })

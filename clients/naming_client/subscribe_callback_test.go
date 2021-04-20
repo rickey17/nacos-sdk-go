@@ -56,7 +56,7 @@ func TestEventDispatcher_AddCallbackFuncs(t *testing.T) {
 		ServiceName: "Test",
 		Clusters:    []string{"default"},
 		GroupName:   "public",
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
+		SubscribeCallback: func(params map[string]interface{}, services []model.SubscribeService, err error) {
 			fmt.Println(util.ToJsonString(ed.callbackFuncsMap))
 		},
 	}
@@ -64,7 +64,7 @@ func TestEventDispatcher_AddCallbackFuncs(t *testing.T) {
 	key := util.GetServiceCacheKey(util.GetGroupName(param.ServiceName, param.GroupName), strings.Join(param.Clusters, ","))
 	for k, v := range ed.callbackFuncsMap.Items() {
 		assert.Equal(t, key, k, "key should be equal!")
-		funcs := v.([]*func(services []model.SubscribeService, err error))
+		funcs := v.([]*func(params map[string]interface{}, services []model.SubscribeService, err error))
 		assert.Equal(t, len(funcs), 1)
 		assert.Equal(t, funcs[0], &param.SubscribeCallback, "callback function must be equal!")
 
@@ -98,7 +98,7 @@ func TestEventDispatcher_RemoveCallbackFuncs(t *testing.T) {
 		ServiceName: "Test",
 		Clusters:    []string{"default"},
 		GroupName:   "public",
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
+		SubscribeCallback: func(params map[string]interface{}, services []model.SubscribeService, err error) {
 			fmt.Printf("func1:%s \n", util.ToJsonString(services))
 		},
 	}
@@ -109,7 +109,7 @@ func TestEventDispatcher_RemoveCallbackFuncs(t *testing.T) {
 		ServiceName: "Test",
 		Clusters:    []string{"default"},
 		GroupName:   "public",
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
+		SubscribeCallback: func(params map[string]interface{}, services []model.SubscribeService, err error) {
 			fmt.Printf("func2:%s \n", util.ToJsonString(services))
 		},
 	}
@@ -117,7 +117,7 @@ func TestEventDispatcher_RemoveCallbackFuncs(t *testing.T) {
 	assert.Equal(t, len(ed.callbackFuncsMap.Items()), 1, "callback funcs map length should be 2")
 
 	for k, v := range ed.callbackFuncsMap.Items() {
-		log.Printf("key:%s,%d", k, len(v.([]*func(services []model.SubscribeService, err error))))
+		log.Printf("key:%s,%d", k, len(v.([]*func(params map[string]interface{}, services []model.SubscribeService, err error))))
 	}
 
 	ed.RemoveCallbackFuncs(util.GetGroupName(param2.ServiceName, param2.GroupName), strings.Join(param2.Clusters, ","), &param2.SubscribeCallback)
@@ -125,7 +125,7 @@ func TestEventDispatcher_RemoveCallbackFuncs(t *testing.T) {
 	key := util.GetServiceCacheKey(util.GetGroupName(param.ServiceName, param.GroupName), strings.Join(param.Clusters, ","))
 	for k, v := range ed.callbackFuncsMap.Items() {
 		assert.Equal(t, key, k, "key should be equal!")
-		funcs := v.([]*func(services []model.SubscribeService, err error))
+		funcs := v.([]*func(params map[string]interface{}, services []model.SubscribeService, err error))
 		assert.Equal(t, len(funcs), 1)
 		assert.Equal(t, funcs[0], &param.SubscribeCallback, "callback function must be equal!")
 
@@ -159,7 +159,7 @@ func TestSubscribeCallback_ServiceChanged(t *testing.T) {
 		ServiceName: "Test",
 		Clusters:    []string{"default"},
 		GroupName:   "public",
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
+		SubscribeCallback: func(params map[string]interface{}, services []model.SubscribeService, err error) {
 			log.Printf("func1:%s \n", util.ToJsonString(services))
 		},
 	}
@@ -169,7 +169,7 @@ func TestSubscribeCallback_ServiceChanged(t *testing.T) {
 		ServiceName: "Test",
 		Clusters:    []string{"default"},
 		GroupName:   "public",
-		SubscribeCallback: func(services []model.SubscribeService, err error) {
+		SubscribeCallback: func(params map[string]interface{}, services []model.SubscribeService, err error) {
 			log.Printf("func2:%s \n", util.ToJsonString(services))
 
 		},
