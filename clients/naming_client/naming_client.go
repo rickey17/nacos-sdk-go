@@ -151,6 +151,40 @@ func (sc *NamingClient) DeregisterInstance(param vo.DeregisterInstanceParam) (bo
 	return true, nil
 }
 
+// 修改服务实例
+func (sc *NamingClient) ModifyInstance(param vo.ModifyInstanceParam) (bool, error) {
+	instance := model.Instance{
+		Ip:   param.Ip,
+		Port: param.Port,
+	}
+	if len(param.GroupName) == 0 {
+		param.GroupName = constant.DEFAULT_GROUP
+	}
+	if param.ClusterName != "" {
+		instance.ClusterName = param.ClusterName
+	}
+	if param.Metadata != nil {
+		instance.Metadata = param.Metadata
+	}
+	if param.Healthy != nil {
+		instance.Healthy = *param.Healthy
+	}
+	if param.Enable != nil {
+		instance.Enable = *param.Enable
+	}
+	if param.Ephemeral != nil {
+		instance.Ephemeral = *param.Ephemeral
+	}
+	if param.Weight != nil {
+		instance.Weight = *param.Weight
+	}
+	_, err := sc.serviceProxy.ModifyInstance(util.GetGroupName(param.ServiceName, param.GroupName), param.GroupName, instance)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // 获取服务列表
 func (sc *NamingClient) GetService(param vo.GetServiceParam) (model.Service, error) {
 	if len(param.GroupName) == 0 {
