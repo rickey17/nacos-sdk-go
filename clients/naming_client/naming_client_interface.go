@@ -48,18 +48,18 @@ type INamingClient interface {
 	//Ephemeral optional
 	DeregisterInstance(param vo.DeregisterInstanceParam) (bool, error)
 
-	//ModifyInstance use to modify instance
-	//Ip  require
-	//Port  require
-	//ServiceName require
-	//Weight  optional,it must be lager than 0
-	//Enable  optional,the instance can be access or not
-	//Healthy  optional,the instance is health or not
-	//Metadata  optional
-	//ClusterName  optional,default:DEFAULT
-	//GroupName optional,default:DEFAULT_GROUP
-	//Ephemeral optional
-	ModifyInstance(param vo.ModifyInstanceParam) (bool, error)
+	// UpdateInstance use to modify instance
+	// Ip required
+	// Port required
+	// Tenant optional
+	// Cluster optional,default:DEFAULT
+	// ServiceName  require
+	// GroupName  optional,default:DEFAULT_GROUP
+	// Ephemeral optional
+	// Weight  require,it must be lager than 0
+	// Enable  require,the instance can be access or not
+	// Metadata  optional
+	UpdateInstance(param vo.UpdateInstanceParam) (bool, error)
 
 	//GetService use to get service
 	//ServiceName require

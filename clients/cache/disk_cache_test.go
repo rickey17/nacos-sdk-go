@@ -14,40 +14,23 @@
  * limitations under the License.
  */
 
-package file
+package cache
 
 import (
-	"log"
-	"os"
-	"path/filepath"
 	"runtime"
+	"testing"
+
+	"github.com/nacos-group/nacos-sdk-go/common/constant"
+	"github.com/stretchr/testify/assert"
 )
 
-var osType string
-var path string
+func TestGetFileName(t *testing.T) {
 
-const WINDOWS = "windows"
+	name := GetFileName("nacos@@providers:org.apache.dubbo.UserProvider:hangzhou", "tmp")
 
-func init() {
-	osType = runtime.GOOS
-	if os.IsPathSeparator('\\') { //前边的判断是否是系统的分隔符
-		path = "\\"
+	if runtime.GOOS == constant.OS_WINDOWS {
+		assert.Equal(t, name, "tmp\\nacos@@providers&&org.apache.dubbo.UserProvider&&hangzhou")
 	} else {
-		path = "/"
+		assert.Equal(t, name, "tmp/nacos@@providers:org.apache.dubbo.UserProvider:hangzhou")
 	}
-}
-
-func MkdirIfNecessary(createDir string) (err error) {
-	return os.MkdirAll(createDir, os.ModePerm)
-}
-
-func GetCurrentPath() string {
-	dir, err := os.Getwd() //当前的目录
-	if err != nil {
-		dir, err = filepath.Abs(filepath.Dir(os.Args[0]))
-		if err != nil {
-			log.Println("can not get current path")
-		}
-	}
-	return dir
 }

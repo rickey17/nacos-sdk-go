@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/nacos-group/nacos-sdk-go/clients/cache"
 	"github.com/nacos-group/nacos-sdk-go/clients/nacos_client"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
@@ -31,7 +33,6 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/model"
 	"github.com/nacos-group/nacos-sdk-go/util"
 	"github.com/nacos-group/nacos-sdk-go/vo"
-	"github.com/pkg/errors"
 )
 
 type NamingClient struct {
@@ -51,7 +52,8 @@ type Chooser struct {
 }
 
 func NewNamingClient(nc nacos_client.INacosClient) (NamingClient, error) {
-	naming := NamingClient{}
+	rand.Seed(time.Now().UnixNano())
+	naming := NamingClient{INacosClient: nc}
 	clientConfig, err := nc.GetClientConfig()
 	if err != nil {
 		return naming, err
@@ -65,12 +67,20 @@ func NewNamingClient(nc nacos_client.INacosClient) (NamingClient, error) {
 	if err != nil {
 		return naming, err
 	}
-	err = logger.InitLogger(logger.Config{
+	loggerConfig := logger.Config{
 		Level:        clientConfig.LogLevel,
 		OutputPath:   clientConfig.LogDir,
 		RotationTime: clientConfig.RotateTime,
 		MaxAge:       clientConfig.MaxAge,
-	})
+	}
+	if clientConfig.LogSampling != nil {
+		loggerConfig.Sampling = &logger.SamplingConfig{
+			Initial:    clientConfig.LogSampling.Initial,
+			Thereafter: clientConfig.LogSampling.Thereafter,
+			Tick:       clientConfig.LogSampling.Tick,
+		}
+	}
+	err = logger.InitLogger(loggerConfig)
 	if err != nil {
 		return naming, err
 	}
@@ -100,6 +110,9 @@ func (sc *NamingClient) UpdateServer(serverList []constant.ServerConfig) bool {
 
 // 注册服务实例
 func (sc *NamingClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
+	if param.ServiceName == "" {
+		return false, errors.New("serviceName cannot be empty!")
+	}
 	if len(param.GroupName) == 0 {
 		param.GroupName = constant.DEFAULT_GROUP
 	}
@@ -151,34 +164,34 @@ func (sc *NamingClient) DeregisterInstance(param vo.DeregisterInstanceParam) (bo
 	return true, nil
 }
 
-// 修改服务实例
-func (sc *NamingClient) ModifyInstance(param vo.ModifyInstanceParam) (bool, error) {
-	instance := model.Instance{
-		Ip:   param.Ip,
-		Port: param.Port,
-	}
+// UpdateInstance Update information for exist instance.
+func (sc *NamingClient) UpdateInstance(param vo.UpdateInstanceParam) (bool, error) {
 	if len(param.GroupName) == 0 {
 		param.GroupName = constant.DEFAULT_GROUP
 	}
-	if param.ClusterName != "" {
-		instance.ClusterName = param.ClusterName
+
+	if param.Ephemeral {
+		// Update the heartbeat information first to prevent the information
+		// from being flushed back to the original information after reconnecting
+		sc.beatReactor.RemoveBeatInfo(util.GetGroupName(param.ServiceName, param.GroupName), param.Ip, param.Port)
+		beatInfo := model.BeatInfo{
+			Ip:          param.Ip,
+			Port:        param.Port,
+			Metadata:    param.Metadata,
+			ServiceName: util.GetGroupName(param.ServiceName, param.GroupName),
+			Cluster:     param.ClusterName,
+			Weight:      param.Weight,
+			Period:      util.GetDurationWithDefault(param.Metadata, constant.HEART_BEAT_INTERVAL, time.Second*5),
+			State:       model.StateRunning,
+		}
+		sc.beatReactor.AddBeatInfo(util.GetGroupName(param.ServiceName, param.GroupName), beatInfo)
 	}
-	if param.Metadata != nil {
-		instance.Metadata = param.Metadata
-	}
-	if param.Healthy != nil {
-		instance.Healthy = *param.Healthy
-	}
-	if param.Enable != nil {
-		instance.Enable = *param.Enable
-	}
-	if param.Ephemeral != nil {
-		instance.Ephemeral = *param.Ephemeral
-	}
-	if param.Weight != nil {
-		instance.Weight = *param.Weight
-	}
-	_, err := sc.serviceProxy.ModifyInstance(util.GetGroupName(param.ServiceName, param.GroupName), param.GroupName, instance)
+
+	// Do update instance
+	_, err := sc.serviceProxy.UpdateInstance(
+		util.GetGroupName(param.ServiceName, param.GroupName), param.Ip, param.Port, param.ClusterName, param.Ephemeral,
+		param.Weight, param.Enable, param.Metadata)
+
 	if err != nil {
 		return false, err
 	}
@@ -285,7 +298,7 @@ func random(instances []model.Instance, mw int) []model.Instance {
 	if len(instances) <= 1 || mw <= 1 {
 		return instances
 	}
-	//实例交叉插入列表，避免列表中是连续的实例
+	// 实例交叉插入列表，避免列表中是连续的实例
 	var result = make([]model.Instance, 0)
 	for i := 1; i <= mw; i++ {
 		for _, host := range instances {
@@ -324,7 +337,6 @@ func newChooser(instances []model.Instance) Chooser {
 }
 
 func (chs Chooser) pick() model.Instance {
-	rand.Seed(time.Now().Unix())
 	r := rand.Intn(chs.max) + 1
 	i := sort.SearchInts(chs.totals, r)
 	return chs.data[i]
@@ -352,7 +364,7 @@ func (sc *NamingClient) Subscribe(param *vo.SubscribeParam) error {
 	return nil
 }
 
-//取消服务监听
+// 取消服务监听
 func (sc *NamingClient) Unsubscribe(param *vo.SubscribeParam) error {
 	sc.subCallback.RemoveCallbackFuncs(util.GetGroupName(param.ServiceName, param.GroupName), strings.Join(param.Clusters, ","), &param.SubscribeCallback)
 	return nil

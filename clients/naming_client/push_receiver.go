@@ -167,7 +167,7 @@ func (us *PushReceiver) getConn() *net.UDPConn {
 
 		if ok {
 			conn = conn1
-			logger.Infof("udp server start, port: %d", us.port)
+			logger.Infof("udp server start, port: " + strconv.Itoa(port))
 			return conn
 		}
 
@@ -196,6 +196,15 @@ func (us *PushReceiver) startServer() {
 }
 
 func (us *PushReceiver) handleClient(conn *net.UDPConn) {
+
+	if conn == nil {
+		time.Sleep(time.Second * 5)
+		conn = us.getConn()
+		if conn == nil {
+			return
+		}
+	}
+
 	data := make([]byte, 4024)
 	n, remoteAddr, err := conn.ReadFromUDP(data)
 	if err != nil {

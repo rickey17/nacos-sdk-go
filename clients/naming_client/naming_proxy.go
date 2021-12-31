@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	"github.com/buger/jsonparser"
+
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/common/http_agent"
 	"github.com/nacos-group/nacos-sdk-go/common/logger"
@@ -81,22 +82,19 @@ func (proxy *NamingProxy) DeregisterInstance(serviceName string, ip string, port
 	return proxy.nacosServer.ReqApi(constant.SERVICE_PATH, params, http.MethodDelete)
 }
 
-func (proxy *NamingProxy) ModifyInstance(serviceName string, groupName string, instance model.Instance) (string, error) {
-	logger.Infof("modify instance namespaceId:<%s>,serviceName:<%s> with instance:<%s>",
-		proxy.clientConfig.NamespaceId, serviceName, util.ToJsonString(instance))
+func (proxy *NamingProxy) UpdateInstance(serviceName string, ip string, port uint64, clusterName string, ephemeral bool, weight float64, enable bool, metadata map[string]string) (string, error) {
+	logger.Infof("modify instance namespaceId:<%s>,serviceName:<%s> with instance:<%s:%d@%s>",
+		proxy.clientConfig.NamespaceId, serviceName, ip, port, clusterName)
 	params := map[string]string{}
 	params["namespaceId"] = proxy.clientConfig.NamespaceId
 	params["serviceName"] = serviceName
-	params["groupName"] = groupName
-	params["app"] = proxy.clientConfig.AppName
-	params["clusterName"] = instance.ClusterName
-	params["ip"] = instance.Ip
-	params["port"] = strconv.Itoa(int(instance.Port))
-	params["weight"] = strconv.FormatFloat(instance.Weight, 'f', -1, 64)
-	params["enable"] = strconv.FormatBool(instance.Enable)
-	params["healthy"] = strconv.FormatBool(instance.Healthy)
-	params["metadata"] = util.ToJsonString(instance.Metadata)
-	params["ephemeral"] = strconv.FormatBool(instance.Ephemeral)
+	params["clusterName"] = clusterName
+	params["ip"] = ip
+	params["port"] = strconv.Itoa(int(port))
+	params["ephemeral"] = strconv.FormatBool(ephemeral)
+	params["weight"] = strconv.FormatFloat(weight, 'f', -1, 64)
+	params["enable"] = strconv.FormatBool(enable)
+	params["metadata"] = util.ToJsonString(metadata)
 	return proxy.nacosServer.ReqApi(constant.SERVICE_PATH, params, http.MethodPut)
 }
 
