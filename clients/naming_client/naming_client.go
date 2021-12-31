@@ -88,6 +88,16 @@ func NewNamingClient(nc nacos_client.INacosClient) (NamingClient, error) {
 	return naming, nil
 }
 
+func (sc *NamingClient) UpdateServer(serverList []constant.ServerConfig) bool {
+	if sc == nil {
+		return false
+	}
+	if sc.serviceProxy.nacosServer == nil {
+		return false
+	}
+	return sc.serviceProxy.nacosServer.UpdateServerConfig(serverList)
+}
+
 // 注册服务实例
 func (sc *NamingClient) RegisterInstance(param vo.RegisterInstanceParam) (bool, error) {
 	if param.ServiceName == "" {
@@ -138,6 +148,40 @@ func (sc *NamingClient) DeregisterInstance(param vo.DeregisterInstanceParam) (bo
 	sc.beatReactor.RemoveBeatInfo(util.GetGroupName(param.ServiceName, param.GroupName), param.Ip, param.Port)
 
 	_, err := sc.serviceProxy.DeregisterInstance(util.GetGroupName(param.ServiceName, param.GroupName), param.Ip, param.Port, param.Cluster, param.Ephemeral)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// 修改服务实例
+func (sc *NamingClient) ModifyInstance(param vo.ModifyInstanceParam) (bool, error) {
+	instance := model.Instance{
+		Ip:   param.Ip,
+		Port: param.Port,
+	}
+	if len(param.GroupName) == 0 {
+		param.GroupName = constant.DEFAULT_GROUP
+	}
+	if param.ClusterName != "" {
+		instance.ClusterName = param.ClusterName
+	}
+	if param.Metadata != nil {
+		instance.Metadata = param.Metadata
+	}
+	if param.Healthy != nil {
+		instance.Healthy = *param.Healthy
+	}
+	if param.Enable != nil {
+		instance.Enable = *param.Enable
+	}
+	if param.Ephemeral != nil {
+		instance.Ephemeral = *param.Ephemeral
+	}
+	if param.Weight != nil {
+		instance.Weight = *param.Weight
+	}
+	_, err := sc.serviceProxy.ModifyInstance(util.GetGroupName(param.ServiceName, param.GroupName), param.GroupName, instance)
 	if err != nil {
 		return false, err
 	}

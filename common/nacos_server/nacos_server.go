@@ -72,11 +72,23 @@ func NewNacosServer(serverList []constant.ServerConfig, clientCfg constant.Clien
 	_, err := securityLogin.Login()
 
 	if err != nil {
-		logger.Errorf("login has error %+v", err)
+		return &ns, err
 	}
 
 	securityLogin.AutoRefresh()
 	return &ns, nil
+}
+
+func (server *NacosServer) UpdateServerConfig(serverList []constant.ServerConfig) bool {
+	if serverList == nil || len(serverList) == 0 {
+		return false
+	}
+	server.RWMutex.Lock()
+	defer func() {
+		server.RWMutex.Unlock()
+	}()
+	server.serverList = serverList
+	return true
 }
 
 func (server *NacosServer) callConfigServer(api string, params map[string]string, newHeaders map[string]string,

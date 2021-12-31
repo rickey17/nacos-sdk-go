@@ -18,6 +18,7 @@ package naming_client
 
 import (
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -36,6 +37,8 @@ type BeatReactor struct {
 	beatThreadCount     int
 	beatThreadSemaphore *nsema.Semaphore
 	beatRecordMap       cache.ConcurrentMap
+
+	clientMux sync.RWMutex
 }
 
 const Default_Beat_Thread_Num = 20
@@ -61,6 +64,9 @@ func buildKey(serviceName string, ip string, port uint64) string {
 func (br *BeatReactor) AddBeatInfo(serviceName string, beatInfo model.BeatInfo) {
 	logger.Infof("adding beat: <%s> to beat map", util.ToJsonString(beatInfo))
 	k := buildKey(serviceName, beatInfo.Ip, beatInfo.Port)
+	br.clientMux.Lock()
+	defer br.clientMux.Unlock()
+	br.RemoveBeatInfo(serviceName, beatInfo.Ip, beatInfo.Port)
 	br.beatMap.Set(k, &beatInfo)
 	go br.sendInstanceBeat(k, &beatInfo)
 }

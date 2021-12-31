@@ -81,6 +81,25 @@ func (proxy *NamingProxy) DeregisterInstance(serviceName string, ip string, port
 	return proxy.nacosServer.ReqApi(constant.SERVICE_PATH, params, http.MethodDelete)
 }
 
+func (proxy *NamingProxy) ModifyInstance(serviceName string, groupName string, instance model.Instance) (string, error) {
+	logger.Infof("modify instance namespaceId:<%s>,serviceName:<%s> with instance:<%s>",
+		proxy.clientConfig.NamespaceId, serviceName, util.ToJsonString(instance))
+	params := map[string]string{}
+	params["namespaceId"] = proxy.clientConfig.NamespaceId
+	params["serviceName"] = serviceName
+	params["groupName"] = groupName
+	params["app"] = proxy.clientConfig.AppName
+	params["clusterName"] = instance.ClusterName
+	params["ip"] = instance.Ip
+	params["port"] = strconv.Itoa(int(instance.Port))
+	params["weight"] = strconv.FormatFloat(instance.Weight, 'f', -1, 64)
+	params["enable"] = strconv.FormatBool(instance.Enable)
+	params["healthy"] = strconv.FormatBool(instance.Healthy)
+	params["metadata"] = util.ToJsonString(instance.Metadata)
+	params["ephemeral"] = strconv.FormatBool(instance.Ephemeral)
+	return proxy.nacosServer.ReqApi(constant.SERVICE_PATH, params, http.MethodPut)
+}
+
 func (proxy *NamingProxy) SendBeat(info model.BeatInfo) (int64, error) {
 	logger.Infof("namespaceId:<%s> sending beat to server:<%s>",
 		proxy.clientConfig.NamespaceId, util.ToJsonString(info))
